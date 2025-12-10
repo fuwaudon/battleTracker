@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>戦績トラッカー</title>
+<title>カードゲーム 戦績トラッカー</title>
 <style>
     body {
         background: #0f1a2b;
@@ -10,7 +10,8 @@
         font-family: Arial, sans-serif;
         padding: 20px;
     }
-    h2 { border-bottom: 1px solid #446; padding-bottom: 4px; }
+    h1,h2 { margin-bottom:10px; }
+    h2 { border-bottom:1px solid #446; padding-bottom:4px; }
 
     .section {
         background: #16233a;
@@ -62,6 +63,20 @@
     .rate-green { color: #4fff4f; }
     .rate-red { color: #ff6b6b; }
     .rate-white { color: #ffffff; }
+
+    /* ===== スマホ対応 RWD ===== */
+    @media (max-width: 600px) {
+        #statsDeckSelect { display: none; }
+
+        input, select, button {
+            font-size: 16px;
+            padding: 10px;
+        }
+
+        .section { padding: 20px; }
+
+        .deck-list { max-height: 200px; }
+    }
 </style>
 </head>
 <body>
@@ -125,7 +140,6 @@
 </div>
 
 <script>
-/*** ローカルストレージ管理 ***/
 let myDecks = JSON.parse(localStorage.getItem("myDecks") || "[]");
 let opDecks = JSON.parse(localStorage.getItem("opDecks") || "[]");
 let matches = JSON.parse(localStorage.getItem("matches") || "[]");
@@ -133,28 +147,22 @@ let matches = JSON.parse(localStorage.getItem("matches") || "[]");
 let tempOrder = "";
 let tempResult = "";
 
-/*** 保存関数 ***/
 function saveAll() {
     localStorage.setItem("myDecks", JSON.stringify(myDecks));
     localStorage.setItem("opDecks", JSON.stringify(opDecks));
     localStorage.setItem("matches", JSON.stringify(matches));
 }
 
-/*** 自分デッキ登録 ***/
 function addMyDeck() {
     const name = document.getElementById("myDeckName").value.trim();
     if (!name) return;
-    if (myDecks.length >= 5) {
-        alert("自分のデッキは5つまでです。");
-        return;
-    }
+    if (myDecks.length >= 5) { alert("自分のデッキは5つまでです。"); return; }
     myDecks.push(name);
     saveAll();
     document.getElementById("myDeckName").value = "";
     renderLists();
 }
 
-/*** 相手デッキ登録 ***/
 function addOpDeck() {
     const name = document.getElementById("opDeckName").value.trim();
     if (!name) return;
@@ -164,167 +172,89 @@ function addOpDeck() {
     renderLists();
 }
 
-/*** デッキ削除 ***/
-function deleteMyDeck(i) {
-    myDecks.splice(i, 1);
-    saveAll();
-    renderLists();
-}
-function deleteOpDeck(i) {
-    opDecks.splice(i, 1);
-    saveAll();
-    renderLists();
-}
+function deleteMyDeck(i) { myDecks.splice(i,1); saveAll(); renderLists(); }
+function deleteOpDeck(i) { opDecks.splice(i,1); saveAll(); renderLists(); }
 
-/*** ボタン選択 ***/
-function setOrder(o) {
-    tempOrder = o;
-    document.getElementById("orderLabel").textContent = o;
-}
-function setResult(r) {
-    tempResult = r;
-    document.getElementById("resultLabel").textContent = r;
-}
+function setOrder(o) { tempOrder = o; document.getElementById("orderLabel").textContent = o; }
+function setResult(r) { tempResult = r; document.getElementById("resultLabel").textContent = r; }
 
-/*** 戦績登録 ***/
 function registerResult() {
     const md = document.getElementById("useMyDeck").value;
     const od = document.getElementById("useOpDeck").value;
-
-    if (!md || !od || !tempOrder || !tempResult) {
-        alert("すべて選択してください。");
-        return;
-    }
-
-    matches.push({
-        my: md,
-        op: od,
-        order: tempOrder,
-        result: tempResult
-    });
-
+    if (!md || !od || !tempOrder || !tempResult) { alert("すべて選択してください。"); return; }
+    matches.push({ my: md, op: od, order: tempOrder, result: tempResult });
     saveAll();
-
-    tempOrder = "";
-    tempResult = "";
+    tempOrder = ""; tempResult = "";
     document.getElementById("orderLabel").textContent = "";
     document.getElementById("resultLabel").textContent = "";
-
-    alert("戦績を登録しました！");
     showStats();
 }
 
-/*** 戦績表示 ***/
 function showStats() {
     const deck = document.getElementById("statsDeckSelect").value;
     if (!deck) return;
-
-    const list = matches.filter(m => m.my === deck);
-
+    const list = matches.filter(m=>m.my===deck);
     let total = list.length;
-    let win = list.filter(m => m.result === "勝ち").length;
+    let win = list.filter(m=>m.result==="勝ち").length;
 
-    function rate(n, d) {
-        if (d === 0) return "-";
-        const r = (n / d * 100).toFixed(1);
-        let cls = "rate-white";
-        if (r >= 60) cls = "rate-green";
-        else if (r < 35) cls = "rate-red";
+    function rate(n,d){
+        if(d===0) return "-";
+        const r=(n/d*100).toFixed(1);
+        let cls="rate-white";
+        if(r>=60) cls="rate-green";
+        else if(r<35) cls="rate-red";
         return `<span class="${cls}">${r}%</span>`;
     }
 
-    let html = `
-    <h3>全体戦績</h3>
+    let html=`<h3>全体戦績</h3>
     <table class="stats-table">
-        <tr><th>試合数</th><th>勝利</th><th>勝率</th></tr>
-        <tr>
-            <td>${total}</td>
-            <td>${win}</td>
-            <td>${rate(win,total)}</td>
-        </tr>
-    </table>
-    `;
+    <tr><th>試合数</th><th>勝利</th><th>勝率</th></tr>
+    <tr><td>${total}</td><td>${win}</td><td>${rate(win,total)}</td></tr>
+    </table>`;
 
-    // ▼ 対面別集計＋ソート ▼
-    const opGrouped = {};
-    list.forEach(m => {
-        if (!opGrouped[m.op]) opGrouped[m.op] = [];
-        opGrouped[m.op].push(m);
-    });
+    const opGrouped={};
+    list.forEach(m=>{ if(!opGrouped[m.op]) opGrouped[m.op]=[]; opGrouped[m.op].push(m); });
 
-    // ソート用データ整形
-    let sorted = Object.entries(opGrouped).map(([op, arr]) => ({
-        op,
-        total: arr.length,
-        win: arr.filter(x => x.result === "勝ち").length
-    }));
+    let sorted=Object.entries(opGrouped).map(([op,arr])=>({op,total:arr.length,win:arr.filter(x=>x.result==="勝ち").length}));
+    sorted.sort((a,b)=>b.total-a.total);
 
-    // ▼ 対戦数の多い順に並べる
-    sorted.sort((a, b) => b.total - a.total);
-
-    html += `<h3>相手デッキ別（対戦数の多い順）</h3>
+    html+=`<h3>相手デッキ別（対戦数の多い順）</h3>
     <table class="stats-table">
-        <tr><th>相手デッキ</th><th>試合</th><th>勝ち</th><th>勝率</th></tr>`;
-
-    sorted.forEach(row => {
-        html += `
-        <tr>
-            <td>${row.op}</td>
-            <td>${row.total}</td>
-            <td>${row.win}</td>
-            <td>${rate(row.win,row.total)}</td>
-        </tr>
-        `;
+    <tr><th>相手デッキ</th><th>試合</th><th>勝ち</th><th>勝率</th></tr>`;
+    sorted.forEach(row=>{
+        html+=`<tr><td>${row.op}</td><td>${row.total}</td><td>${row.win}</td><td>${rate(row.win,row.total)}</td></tr>`;
     });
+    html+=`</table>`;
 
-    html += `</table>`;
-
-    document.getElementById("statsOutput").innerHTML = html;
+    document.getElementById("statsOutput").innerHTML=html;
 }
 
-/*** 表示更新（デッキ一覧など） ***/
-function renderLists() {
-    const myList = document.getElementById("myDeckList");
-    const opList = document.getElementById("opDeckList");
-    const mySel = document.getElementById("useMyDeck");
-    const opSel = document.getElementById("useOpDeck");
-    const statsSel = document.getElementById("statsDeckSelect");
+function renderLists(){
+    const myList=document.getElementById("myDeckList");
+    const opList=document.getElementById("opDeckList");
+    const mySel=document.getElementById("useMyDeck");
+    const opSel=document.getElementById("useOpDeck");
+    const statsSel=document.getElementById("statsDeckSelect");
 
-    myList.innerHTML = myDecks.map((d,i)=>`
-        <div class="deck-item">${d}
-            <span class="delete-btn" onclick="deleteMyDeck(${i})">✖</span>
-        </div>
-    `).join("");
+    myList.innerHTML=myDecks.map((d,i)=>`<div class="deck-item">${d}<span class="delete-btn" onclick="deleteMyDeck(${i})">✖</span></div>`).join("");
+    opList.innerHTML=opDecks.map((d,i)=>`<div class="deck-item">${d}<span class="delete-btn" onclick="deleteOpDeck(${i})">✖</span></div>`).join("");
 
-    opList.innerHTML = opDecks.map((d,i)=>`
-        <div class="deck-item">${d}
-            <span class="delete-btn" onclick="deleteOpDeck(${i})">✖</span>
-        </div>
-    `).join("");
-
-    mySel.innerHTML = myDecks.map(d=>`<option>${d}</option>`).join("");
-    opSel.innerHTML = opDecks.map(d=>`<option>${d}</option>`).join("");
-    statsSel.innerHTML = myDecks.map(d=>`<option>${d}</option>`).join("");
+    mySel.innerHTML=myDecks.map(d=>`<option>${d}</option>`).join("");
+    opSel.innerHTML=opDecks.map(d=>`<option>${d}</option>`).join("");
+    statsSel.innerHTML=myDecks.map(d=>`<option>${d}</option>`).join("");
 
     showStats();
 }
 
-/*** データリセット ***/
-function resetData() {
-    if (confirm("本当にリセットしますか？")) {
+function resetData(){
+    if(confirm("本当にリセットしますか？")){
         localStorage.clear();
-        myDecks = [];
-        opDecks = [];
-        matches = [];
+        myDecks=[]; opDecks=[]; matches=[];
         renderLists();
-        alert("データをリセットしました。");
     }
 }
 
-/*** 初期描画 ***/
 renderLists();
-
 </script>
-
 </body>
 </html>
